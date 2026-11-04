@@ -12,7 +12,7 @@ import {
 import { acceptedContent, inputRequired } from '@modelcontextprotocol/server';
 import { map, type Observable } from 'rxjs';
 import * as z from 'zod';
-import { McpExecutionContext, McpModule, Prompt, Resource, Tool, type McpClientContext } from '../../../lib/index.js';
+import { McpExecutionContext, McpModule, Prompt, Resource, Tool, type McpContext } from '../../../lib/index.js';
 
 /** Over stdio the credentials come from the environment, as the spec has it: `MCP_ROLE`. */
 @Injectable()
@@ -49,12 +49,12 @@ export class LocalTools {
   }
 
   @Tool({ description: 'Describes the call' })
-  whoami(_input: unknown, ctx: McpClientContext) {
+  whoami(_input: unknown, ctx: McpContext) {
     return { transport: ctx.transport, era: ctx.era, hasRequest: ctx.request !== undefined, authInfo: ctx.authInfo ?? null };
   }
 
   @Tool({ description: 'Asks for confirmation first', inputSchema: z.object({ path: z.string() }) })
-  remove({ path }: { path: string }, ctx: McpClientContext) {
+  remove({ path }: { path: string }, ctx: McpContext) {
     const Confirmation = z.object({ confirm: z.boolean() });
     const answer = acceptedContent(ctx.server.mcpReq.inputResponses, 'confirm', Confirmation);
     if (answer === undefined) {

@@ -7,7 +7,7 @@ import { Injectable, Module, type INestApplication } from '@nestjs/common';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { acceptedContent, inputRequired } from '@modelcontextprotocol/server';
 import * as z from 'zod';
-import { McpModule, Tool, type McpClientContext } from '../lib/index.js';
+import { McpModule, Tool, type McpContext } from '../lib/index.js';
 import { createApp, urlOf } from './support/adapters.js';
 import { eras, text } from './support/clients.js';
 
@@ -18,7 +18,7 @@ class CancellationTools {
   calls = 0;
 
   @Tool({ name: 'cancel-order', description: 'Cancel an order, once the user confirms', inputSchema: z.object({ orderId: z.string() }) })
-  cancel({ orderId }: { orderId: string }, ctx: McpClientContext) {
+  cancel({ orderId }: { orderId: string }, ctx: McpContext) {
     this.calls++;
     const answer = acceptedContent(ctx.server.mcpReq.inputResponses, 'confirm', Confirmation);
     if (answer === undefined) {

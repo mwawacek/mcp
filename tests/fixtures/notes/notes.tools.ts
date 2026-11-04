@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import * as z from 'zod';
-import { Prompt, Resource, ResourceTemplate, Tool, type McpClientContext, type McpContext } from '../../../lib/index.js';
+import { Prompt, Resource, ResourceTemplate, Tool, type McpContext } from '../../../lib/index.js';
 import { NotesService } from './notes.service.js';
 
 @Injectable()
@@ -37,7 +37,7 @@ export class NotesTools {
   }
 
   @Tool({ description: 'Describes the call' })
-  whoami(input: unknown, ctx: McpClientContext) {
+  whoami(input: unknown, ctx: McpContext) {
     return {
       input,
       kind: ctx.kind,

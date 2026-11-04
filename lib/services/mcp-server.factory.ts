@@ -11,7 +11,7 @@ import {
   type ScopeChallengeHandler,
   type ServerContext,
 } from '@modelcontextprotocol/server';
-import type { McpCallKind, McpClientContext, McpProtocolEra } from '../interfaces/mcp-context.interface.js';
+import type { McpCallKind, McpContext, McpProtocolEra } from '../interfaces/mcp-context.interface.js';
 import type { McpModuleOptions } from '../interfaces/mcp-module-options.interface.js';
 import { MCP_MODULE_OPTIONS } from '../mcp.constants.js';
 import { McpObserve } from '../observe/mcp-observe.service.js';
@@ -195,7 +195,7 @@ export class McpServerFactory {
     uri: URL | undefined,
     server: ServerContext,
     serving: McpServing,
-  ): McpClientContext {
+  ): McpContext {
     return {
       kind,
       name,

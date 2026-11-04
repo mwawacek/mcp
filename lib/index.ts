@@ -17,9 +17,7 @@ export type {
 // Tools, resources, prompts: decorators on provider methods, and what the methods receive
 export * from './decorators/index.js';
 export type {
-  McpAgentContext,
   McpCallKind,
-  McpClientContext,
   McpContext,
   McpProtocolEra,
   McpSchema,
@@ -28,9 +26,6 @@ export type {
   ResourceTemplateOptions,
   ToolOptions,
 } from './interfaces/index.js';
-
-// Where the decorators record themselves, for packages that find them
-export { MCP_PRIMITIVE_METADATA } from './mcp.constants.js';
 
 // Enhancers: the execution context of MCP calls
 export { McpExecutionContext, type McpContextType } from './context/index.js';

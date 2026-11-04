@@ -9,13 +9,19 @@ export type McpCallKind = 'tool' | 'resource' | 'prompt';
  */
 export type McpProtocolEra = 'legacy' | 'modern';
 
-/** What every call's context has, whoever made the call. */
-interface McpCallContext<TRequest> {
+/**
+ * The second argument of every MCP method, and `McpExecutionContext.getContext()` in guards, interceptors and
+ * filters.
+ */
+export interface McpContext<TRequest = any> {
   readonly kind: McpCallKind;
   /** The tool or prompt name, or the resource's name. */
   readonly name: string;
   /** The URI being read, for resources. */
   readonly uri?: URL;
+  /** `http` for Streamable HTTP (and the in-memory test client), `stdio` for stdio. */
+  readonly transport: 'http' | 'stdio';
+  readonly era: McpProtocolEra;
   /**
    * The verified access token, when the module's `auth` option is configured (HTTP only). `clientId`, `scopes`,
    * `expiresAt` and `extra` are what the token verifier returned.
@@ -24,58 +30,24 @@ interface McpCallContext<TRequest> {
   /**
    * The HTTP platform's request object (Express, Fastify or the Node adapter's), as route handlers get it: headers,
    * `request.user` set by middleware, and so on. For the in-memory test client, a plain `{ method, url, headers }`
-   * object; `undefined` over stdio. For an agent's call, the request the agent runs in, if it runs in one.
+   * object; `undefined` over stdio.
    */
   readonly request?: TRequest;
-  /** Aborted when the client cancels the request or goes away. Pass it on to your own I/O. */
-  readonly signal: AbortSignal;
-  /**
-   * Sends a progress notification for this request, if the client asked for progress (its request carries a
-   * `progressToken`); does nothing otherwise. `progress` must grow from one call to the next.
-   */
-  reportProgress(progress: number, total?: number, message?: string): Promise<void>;
-}
-
-/** A call from an MCP client, over Streamable HTTP (and the in-memory test client) or stdio. */
-export interface McpClientContext<TRequest = any> extends McpCallContext<TRequest> {
-  /** `http` for Streamable HTTP (and the in-memory test client), `stdio` for stdio. */
-  readonly transport: 'http' | 'stdio';
-  readonly era: McpProtocolEra;
   /** The web-standard `Request` the SDK served, over HTTP (and in-memory). */
   readonly requestInfo?: Request;
   /** The 2025-era session id; always `undefined` in this version, which serves every request statelessly. */
   readonly sessionId?: string;
+  /** Aborted when the client cancels the request or goes away. Pass it on to your own I/O. */
+  readonly signal: AbortSignal;
   /**
    * The SDK's own request context, for what has no shortcut here: `mcpReq.envelope` (the client's declared
    * capabilities and info, 2026-07-28), `mcpReq.inputResponses` (answers to an `inputRequired()` result),
    * `mcpReq.notify()`, `mcpReq._meta`.
    */
   readonly server: ServerContext;
-}
-
-/**
- * A call from the application's own agent, not from an MCP client. No protocol request is behind it, so it has no
- * era, session or SDK context: a tool that asks the user with `inputRequired()` can do so only for MCP clients.
- */
-export interface McpAgentContext<TRequest = any, TUser = any> extends McpCallContext<TRequest> {
-  readonly transport: 'agent';
-  /** The user the agent acts for, when it runs outside an HTTP request (a queue job, a workflow). */
-  readonly user?: TUser;
-  /** The scopes the agent's caller holds. A tool's `scopes` require them. */
-  readonly scopes?: readonly string[];
-  /** The id the model gave this tool call, to tie the tool's logs to the agent's conversation. */
-  readonly toolCallId?: string;
   /**
-   * In a durable run: the same for every attempt of this call, including the one a process that died mid-call makes
-   * again. Pass it on to what the tool changes (a payment provider's idempotency key), so the change happens once.
-   * `undefined` outside durable runs.
+   * Sends a progress notification for this request, if the client asked for progress (its request carries a
+   * `progressToken`); does nothing otherwise. `progress` must grow from one call to the next.
    */
-  readonly idempotencyKey?: string;
+  reportProgress(progress: number, total?: number, message?: string): Promise<void>;
 }
-
-/**
- * The second argument of every MCP method, and `McpExecutionContext.getContext()` in guards, interceptors and
- * filters. Check `transport` before reading what only one kind of call has: `server`, `era`, `requestInfo` and
- * `sessionId` come with calls from MCP clients, `user` and `scopes` with an agent's.
- */
-export type McpContext<TRequest = any> = McpClientContext<TRequest> | McpAgentContext<TRequest>;

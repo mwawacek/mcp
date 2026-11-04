@@ -61,7 +61,6 @@ export class McpExecutionContext extends ExecutionContextHost {
   }
 
   getSessionId(): string | undefined {
-    const context = this.getContext();
-    return context?.transport === 'agent' ? undefined : context?.sessionId;
+    return this.getContext()?.sessionId;
   }
 }
