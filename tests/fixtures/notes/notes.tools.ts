@@ -54,6 +54,11 @@ export class NotesTools {
     return { content: [], total: 0 };
   }
 
+  @Tool({ name: 'order', outputSchema: z.object({ id: z.string(), placedAt: z.iso.datetime(), total: z.string() }) })
+  order() {
+    return { id: 'o1', placedAt: new Date('2026-11-04T10:00:00.000Z'), total: { toJSON: () => '19.99 EUR' } };
+  }
+
   @Tool({ name: 'formatted-result', outputSchema: formattedResultOutputSchema })
   formattedResult() {
     return {

@@ -10,8 +10,8 @@ import {
 
 /**
  * What a tool method returned, as a `CallToolResult`: a `CallToolResult` or an `inputRequired()` result as is; a
- * string as a text block; nothing as no content; any other value as its JSON text, and also as `structuredContent`
- * when the tool has an output schema.
+ * string as a text block; nothing as no content; any other value as its JSON text, and that JSON also as
+ * `structuredContent` when the tool has an output schema.
  *
  * With an output schema, the SDK refuses a result that has neither `structuredContent` nor `isError: true`, so a
  * value shaped like a `CallToolResult` without them is the tool's data (a DTO with a `content` array), not a result.
@@ -35,7 +35,10 @@ export function toCallToolResult(value: unknown, structured: boolean): CallToolR
   const text = JSON.stringify(value);
   return {
     content: [{ type: 'text', text }],
-    ...(structured && { structuredContent: value as CallToolResult['structuredContent'] }),
+    // The SDK validates `structuredContent` as it is, so it gets the JSON the client receives: a `Date` or a value with
+    // `toJSON()` is checked as its JSON, the same as in the text block.
+    ...(structured &&
+      text !== undefined && { structuredContent: JSON.parse(text) as CallToolResult['structuredContent'] }),
   };
 }
 

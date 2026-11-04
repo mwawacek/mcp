@@ -49,6 +49,7 @@ describe.each(adapters.map((adapter) => adapter.name))('Streamable HTTP on %s', 
         'string-result',
         'null-result',
         'content-dto',
+        'order',
         'formatted-result',
         'formatted-error',
         'fail',
@@ -94,6 +95,13 @@ describe.each(adapters.map((adapter) => adapter.name))('Streamable HTTP on %s', 
       const result = await client.callTool({ name: 'content-dto', arguments: {} });
       expect(result.isError).toBeFalsy();
       expect(result.structuredContent).toEqual({ content: [], total: 0 });
+    });
+
+    it('validates the JSON of a value with a Date or toJSON() against the output schema', async () => {
+      const result = await client.callTool({ name: 'order', arguments: {} });
+      expect(result.isError).toBeFalsy();
+      expect(result.structuredContent).toEqual({ id: 'o1', placedAt: '2026-11-04T10:00:00.000Z', total: '19.99 EUR' });
+      expect(JSON.parse(text(result)!)).toEqual(result.structuredContent);
     });
 
     it('preserves explicitly formatted tool results', async () => {
