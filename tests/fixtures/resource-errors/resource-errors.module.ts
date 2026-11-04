@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Module, NotFoundException } from '@nestjs/common';
 import { acceptedContent, inputRequired, ProtocolError } from '@modelcontextprotocol/server';
 import * as z from 'zod';
-import { McpModule, Resource, ResourceTemplate, type McpClientContext } from '../../../lib/index.js';
+import { McpModule, Resource, ResourceTemplate, type McpContext } from '../../../lib/index.js';
 
 function throwingSerialization(kind: string): object {
   return {
@@ -104,7 +104,7 @@ class ResourceErrors {
   }
 
   @Resource({ uri: 'resource-errors://input-required' })
-  needsInput(_unused: unknown, context: McpClientContext) {
+  needsInput(_unused: unknown, context: McpContext) {
     const answer = acceptedContent(
       context.server.mcpReq.inputResponses,
       'confirm',
