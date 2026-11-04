@@ -4,6 +4,10 @@
  */
 import type { INestApplication } from '@nestjs/common';
 import { ProtocolError, type Client } from '@modelcontextprotocol/client';
+import {
+  formattedErrorOutputSchema,
+  formattedResultOutputSchema,
+} from './fixtures/notes/notes.tools.js';
 import { NotesAppModule } from './fixtures/notes/notes.module.js';
 import { adapters, createApp, urlOf } from './support/adapters.js';
 import { connect, eras, text } from './support/clients.js';
@@ -39,7 +43,18 @@ describe.each(adapters.map((adapter) => adapter.name))('Streamable HTTP on %s', 
 
     it('lists the tools with their JSON Schemas', async () => {
       const { tools } = await client.listTools();
-      expect(tools.map((tool) => tool.name)).toEqual(['add', 'count-notes', 'fail', 'slow', 'whoami']);
+      expect(tools.map((tool) => tool.name)).toEqual([
+        'add',
+        'count-notes',
+        'string-result',
+        'null-result',
+        'content-dto',
+        'formatted-result',
+        'formatted-error',
+        'fail',
+        'slow',
+        'whoami',
+      ]);
       const add = tools.find((tool) => tool.name === 'add')!;
       expect(add.description).toBe('Save a note');
       expect(add.annotations).toEqual({ idempotentHint: false });
@@ -64,6 +79,40 @@ describe.each(adapters.map((adapter) => adapter.name))('Streamable HTTP on %s', 
       const result = await client.callTool({ name: 'count-notes', arguments: {} });
       expect(result.structuredContent).toEqual({ count: expect.any(Number) });
       expect(JSON.parse(text(result)!)).toEqual(result.structuredContent);
+    });
+
+    it.each([
+      ['string-result', 'paid'],
+      ['null-result', null],
+    ])('returns primitive structured output for %s', async (name, expected) => {
+      const result = await client.callTool({ name, arguments: {} });
+      expect(result.isError).toBeFalsy();
+      expect(result.structuredContent).toEqual(era === 'legacy' ? { result: expected } : expected);
+    });
+
+    it('keeps a DTO with an application content property as structured output', async () => {
+      const result = await client.callTool({ name: 'content-dto', arguments: {} });
+      expect(result.isError).toBeFalsy();
+      expect(result.structuredContent).toEqual({ content: [], total: 0 });
+    });
+
+    it('preserves explicitly formatted tool results', async () => {
+      const structuredContent = { content: [], total: 0 };
+      const outerResult = {
+        content: [{ type: 'text' as const, text: 'formatted' }],
+        structuredContent,
+      };
+      expect((await formattedResultOutputSchema['~standard'].validate(outerResult)).issues).toBeUndefined();
+      expect((await formattedResultOutputSchema['~standard'].validate(structuredContent)).issues).toBeUndefined();
+
+      const formatted = await client.callTool({ name: 'formatted-result', arguments: {} });
+      expect(formatted.content).toEqual([{ type: 'text', text: 'formatted' }]);
+      expect(formatted.structuredContent).toEqual(structuredContent);
+
+      const outerError = { content: [{ type: 'text' as const, text: 'failed' }], isError: true as const };
+      expect((await formattedErrorOutputSchema['~standard'].validate(outerError)).issues).toBeUndefined();
+      const error = await client.callTool({ name: 'formatted-error', arguments: {} });
+      expect(error).toMatchObject(outerError);
     });
 
     it('rejects arguments the input schema refuses, before the method runs', async () => {

@@ -3,6 +3,24 @@ import * as z from 'zod';
 import { Prompt, Resource, ResourceTemplate, Tool, type McpContext } from '../../../lib/index.js';
 import { NotesService } from './notes.service.js';
 
+const contentDtoSchema = z.object({ content: z.array(z.string()), total: z.number() });
+
+export const formattedResultOutputSchema = z.union([
+  contentDtoSchema,
+  z.object({
+    content: z.array(z.object({ type: z.literal('text'), text: z.string() })),
+    structuredContent: contentDtoSchema,
+  }),
+]);
+
+export const formattedErrorOutputSchema = z.union([
+  z.object({ message: z.string() }),
+  z.object({
+    content: z.array(z.object({ type: z.literal('text'), text: z.string() })),
+    isError: z.literal(true),
+  }),
+]);
+
 @Injectable()
 export class NotesTools {
   constructor(private readonly notes: NotesService) {}
@@ -19,6 +37,34 @@ export class NotesTools {
   @Tool({ name: 'count-notes', description: 'Count the notes', outputSchema: z.object({ count: z.number() }) })
   count() {
     return { count: this.notes.size };
+  }
+
+  @Tool({ name: 'string-result', outputSchema: z.string() })
+  stringResult() {
+    return 'paid';
+  }
+
+  @Tool({ name: 'null-result', outputSchema: z.null() })
+  nullResult() {
+    return null;
+  }
+
+  @Tool({ name: 'content-dto', outputSchema: z.object({ content: z.array(z.string()), total: z.number() }) })
+  contentDto() {
+    return { content: [], total: 0 };
+  }
+
+  @Tool({ name: 'formatted-result', outputSchema: formattedResultOutputSchema })
+  formattedResult() {
+    return {
+      content: [{ type: 'text' as const, text: 'formatted' }],
+      structuredContent: { content: [], total: 0 },
+    };
+  }
+
+  @Tool({ name: 'formatted-error', outputSchema: formattedErrorOutputSchema })
+  formattedError() {
+    return { content: [{ type: 'text' as const, text: 'failed' }], isError: true };
   }
 
   @Tool({ description: 'Fails on purpose', inputSchema: z.object({ kind: z.enum(['http', 'unknown']) }) })
