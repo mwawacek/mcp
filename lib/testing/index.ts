@@ -45,6 +45,10 @@ export async function connectMcpClient(
   const transport = new StreamableHTTPClientTransport(new URL('http://localhost/mcp'), {
     fetch: (input, init) => {
       const request = new Request(input, init);
+      // A socket would send it, and `http.allowedHosts` needs it.
+      if (!request.headers.has('host')) {
+        request.headers.set('host', new URL(request.url).host);
+      }
       // No HTTP platform here: what guards and auth packages read from `McpContext.request`, Node-style.
       const { pathname, search } = new URL(request.url);
       const platformRequest = { method: request.method, url: pathname + search, headers: Object.fromEntries(request.headers) };
