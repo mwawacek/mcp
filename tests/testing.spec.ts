@@ -2,9 +2,10 @@
  * `@nestjs/mcp/testing`: an SDK client connected in memory, through the same handler as the HTTP endpoint, with and
  * without an HTTP application around the module.
  */
-import type { INestApplication } from '@nestjs/common';
+import { Module, type INestApplication } from '@nestjs/common';
 import { SdkHttpError } from '@modelcontextprotocol/client';
 import { Test, type TestingModule } from '@nestjs/testing';
+import { McpModule } from '../lib/index.js';
 import { connectMcpClient } from '../lib/testing/index.js';
 import { AuthAppModule } from './fixtures/auth/auth.module.js';
 import { NotesAppModule } from './fixtures/notes/notes.module.js';
@@ -59,5 +60,42 @@ describe('connectMcpClient()', () => {
     } finally {
       await moduleRef.close();
     }
+  });
+
+  describe('with http.allowedHosts', () => {
+    const compileWith = (allowedHosts: string[]) => {
+      @Module({ imports: [McpModule.forRoot({ name: 'hosts', version: '1.0.0', http: { allowedHosts } })] })
+      class HostsModule {}
+      return Test.createTestingModule({ imports: [HostsModule] }).compile();
+    };
+
+    it('connects when they name the host of the in-memory endpoint', async () => {
+      const moduleRef = await compileWith(['localhost']);
+      try {
+        const client = await connectMcpClient(moduleRef);
+        await client.close();
+      } finally {
+        await moduleRef.close();
+      }
+    });
+
+    it('is refused when they do not', async () => {
+      const moduleRef = await compileWith(['example.com']);
+      try {
+        await expect(connectMcpClient(moduleRef)).rejects.toBeInstanceOf(SdkHttpError);
+      } finally {
+        await moduleRef.close();
+      }
+    });
+
+    it('sends the Host header given in `headers` instead', async () => {
+      const moduleRef = await compileWith(['example.com']);
+      try {
+        const client = await connectMcpClient(moduleRef, { headers: { host: 'example.com' } });
+        await client.close();
+      } finally {
+        await moduleRef.close();
+      }
+    });
   });
 });
