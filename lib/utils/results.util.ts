@@ -9,6 +9,13 @@ import {
   type ReadResourceResult,
 } from '@modelcontextprotocol/server';
 
+/** The keys of a `ReadResourceResult`: an empty `contents` beside any other key is the resource's data. */
+const RESOURCE_RESULT_KEYS = new Set(['contents', 'ttlMs', 'cacheScope', 'resultType', '_meta']);
+
+function hasOnlyKeys(value: object, keys: Set<string>): boolean {
+  return Object.keys(value).every((key) => keys.has(key));
+}
+
 /**
  * What a tool method returned, as a `CallToolResult`: a `CallToolResult` or an `inputRequired()` result as is; a
  * string as a text block; nothing as no content; any other value as its JSON text, and that JSON also as
@@ -46,7 +53,8 @@ export function toCallToolResult(value: unknown, structured: boolean): CallToolR
 /**
  * What a resource method returned, as a `ReadResourceResult` for `uri`: a `ReadResourceResult` as is; a string as
  * text; bytes as a base64 blob; nothing as no contents; any other value as JSON. A value with a `contents` array that
- * is not a list of resource contents (`{ name: 'inbox', contents: ['note-1'] }`) is the resource's data.
+ * is not a list of resource contents (`{ name: 'inbox', contents: ['note-1'] }`) is the resource's data, and so is an
+ * empty one beside keys a result does not have (`{ name: 'inbox', contents: [] }`).
  */
 export function toReadResourceResult(
   value: unknown,
@@ -56,7 +64,10 @@ export function toReadResourceResult(
   if (isInputRequiredResult(value)) {
     return value;
   }
-  if (isSpecType.ReadResourceResult(value)) {
+  if (
+    isSpecType.ReadResourceResult(value) &&
+    (value.contents.length > 0 || hasOnlyKeys(value, RESOURCE_RESULT_KEYS))
+  ) {
     return value;
   }
   if (value === undefined || value === null) {
