@@ -1,6 +1,7 @@
 import {
   isCallToolResult,
   isInputRequiredResult,
+  isSpecType,
   type CallToolResult,
   type GetPromptResult,
   type InputRequiredResult,
@@ -43,8 +44,9 @@ export function toCallToolResult(value: unknown, structured: boolean): CallToolR
 }
 
 /**
- * What a resource method returned, as a `ReadResourceResult` for `uri`: one with `contents` as is; a string as text;
- * bytes as a base64 blob; nothing as no contents; any other value as JSON.
+ * What a resource method returned, as a `ReadResourceResult` for `uri`: a `ReadResourceResult` as is; a string as
+ * text; bytes as a base64 blob; nothing as no contents; any other value as JSON. A value with a `contents` array that
+ * is not a list of resource contents (`{ name: 'inbox', contents: ['note-1'] }`) is the resource's data.
  */
 export function toReadResourceResult(
   value: unknown,
@@ -54,8 +56,8 @@ export function toReadResourceResult(
   if (isInputRequiredResult(value)) {
     return value;
   }
-  if (value && typeof value === 'object' && Array.isArray((value as ReadResourceResult).contents)) {
-    return value as ReadResourceResult;
+  if (isSpecType.ReadResourceResult(value)) {
+    return value;
   }
   if (value === undefined || value === null) {
     return { contents: [] };
